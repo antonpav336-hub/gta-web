@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LOS SANTOS WEB — GTA-V Web (PC)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #0b0d12; font-family: "Segoe UI", system-ui, sans-serif; color: #fff; user-select: none; }
+    #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+    /* ---------- Кинематографичная виньетка и слоу-мо ---------- */
+    #vignette {
+      position: fixed; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 62%, rgba(0,0,0,.38) 100%);
+    }
+    #slowmoVignette {
+      position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .15s;
+      background: radial-gradient(circle, rgba(12,18,28,.22) 25%, rgba(6,10,18,.78) 100%);
+      backdrop-filter: saturate(0.45) blur(2px);
+    }
+    #slowmoVignette.active { opacity: 1; }
+
+    /* ---------- HUD ---------- */
+    #hud { position: fixed; inset: 0; pointer-events: none; text-shadow: 0 1px 3px #000, 0 0 6px rgba(0,0,0,.6); }
+
+    /* Точечный прицел */
+    #crosshair {
+      position: absolute; left: 50%; top: 50%; width: 6px; height: 6px;
+      margin: -3px 0 0 -3px; border-radius: 50%;
+      background: rgba(255,255,255,.95);
+      border: 1.5px solid rgba(0,0,0,.85);
+      box-shadow: 0 0 4px rgba(0,0,0,.6);
+      transition: opacity .12s, transform .08s, background .08s;
+    }
+    #crosshair.hidden { opacity: 0; }
+    #crosshair.hit { background: #ff4b4b; transform: scale(1.45); }
+
+    #hitmarker { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; opacity: 0; transition: opacity .12s; }
+    #hitmarker.show { opacity: 1; transition: none; }
+    #hitmarker::before, #hitmarker::after { content: ""; position: absolute; left: 10px; top: -2px; width: 2px; height: 26px; background: #ff4b4b; transform: rotate(45deg); }
+    #hitmarker::after { transform: rotate(-45deg); }
+
+    #headshotBadge {
+      position: absolute; left: 50%; top: calc(50% - 34px); transform: translateX(-50%) scale(.9);
+      font-size: 12px; font-weight: 900; letter-spacing: 2px; color: #ff4b4b;
+      text-shadow: 0 0 8px rgba(255,60,60,.8), 0 1px 3px #000;
+      opacity: 0; transition: opacity .15s, transform .15s;
+    }
+    #headshotBadge.show { opacity: 1; transform: translateX(-50%) scale(1.08); transition: none; }
+
+    /* Колесо выбора оружия (Tab) в стиле GTA V */
+    #weaponWheel {
+      position: fixed; left: 50%; top: 50%; width: 320px; height: 320px;
+      margin: -160px 0 0 -160px; pointer-events: none; z-index: 15;
+      transition: opacity .12s, transform .12s;
+    }
+    #weaponWheel.hidden { opacity: 0; transform: scale(.92); }
+    .wheel-bg {
+      position: absolute; inset: 0; border-radius: 50%;
+      background: radial-gradient(circle, transparent 54px, rgba(12,16,24,.76) 56px, rgba(12,16,24,.88) 100%);
+      border: 2px solid rgba(255,255,255,.16);
+      box-shadow: 0 12px 40px rgba(0,0,0,.75);
+    }
+    .wheel-sector {
+      position: absolute; width: 92px; height: 64px; margin: -32px 0 0 -46px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border-radius: 10px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+      color: #cbd5e1; font-size: 11px; font-weight: 700; text-align: center;
+      transition: transform .08s, background .08s, border-color .08s;
+    }
+    .wheel-sector .ico { font-size: 20px; line-height: 1.1; margin-bottom: 2px; }
+    .wheel-sector.active {
+      background: rgba(242,199,68,.92); color: #151100; border-color: #fff;
+      transform: scale(1.12); box-shadow: 0 0 18px rgba(242,199,68,.65);
+    }
+    /* 5 секторов по кругу: 0° верх, 72°, 144°, 216°, 288° */
+    .ws-0 { left: 50%; top: 46px; }
+    .ws-1 { left: 268px; top: 124px; }
+    .ws-2 { left: 226px; top: 248px; }
+    .ws-3 { left: 94px; top: 248px; }
+    .ws-4 { left: 52px; top: 124px; }
+    #wheelCenter {
+      position: absolute; left: 50%; top: 50%; width: 108px; height: 108px;
+      margin: -54px 0 0 -54px; border-radius: 50%;
+      background: rgba(16,20,28,.95); border: 2px solid rgba(242,199,68,.75);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 6px;
+    }
+    #wheelCenter b { font-size: 12px; color: #f2c744; line-height: 1.15; }
+    #wheelCenter span { font-size: 11px; opacity: .82; margin-top: 3px; }
+
+    /* Мини-карта */
+    #minimapWrap { position: absolute; left: 24px; bottom: 56px; width: 190px; height: 190px; }
+    #minimap { width: 190px; height: 190px; border-radius: 50%; border: 3px solid rgba(255,255,255,.85); box-shadow: 0 0 0 3px rgba(0,0,0,.55), 0 4px 14px rgba(0,0,0,.6); background: #1d2229; }
+    #compass { position: absolute; left: 50%; top: -4px; transform: translateX(-50%); font-weight: 700; font-size: 13px; background: #c0392b; width: 20px; height: 20px; border-radius: 50%; text-align: center; line-height: 20px; }
+    .bars { position: absolute; left: 24px; bottom: 28px; width: 190px; display: flex; gap: 6px; }
+    .bar { position: relative; flex: 1; height: 12px; background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.35); overflow: hidden; }
+    .bar b { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; transition: width .2s; }
+    #hpFill { background: linear-gradient(#59c35a, #2f8a3a); }
+    #arFill { background: linear-gradient(#58a8e8, #2c6cb0); }
+
+    /* Правый верхний угол */
+    #topRight { position: absolute; right: 28px; top: 20px; text-align: right; }
+    #money { font-size: 34px; font-weight: 700; color: #6fd36f; letter-spacing: 1px; }
+    #stars { margin-top: 2px; font-size: 26px; letter-spacing: 3px; color: rgba(255,255,255,.25); }
+    #stars .on { color: #f2c744; }
+    #stars.flashing .on { animation: policeFlash 0.6s infinite alternate; }
+    @keyframes policeFlash {
+      0% { color: #ff3b47; text-shadow: 0 0 10px #ff3b47; }
+      100% { color: #3b82f6; text-shadow: 0 0 10px #3b82f6; }
+    }
+    #weaponBox { margin-top: 12px; }
+    #weaponName { font-size: 18px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+    #ammo { font-size: 28px; font-weight: 700; }
+    #ammo small { font-size: 16px; opacity: .75; font-weight: 500; }
+    #ammo.low { color: #ff6b5b; }
+    #reloadMsg { font-size: 14px; color: #f2c744; height: 18px; }
+
+    /* Подсказка посадки / угона [E] */
+    #interactPrompt {
+      position: absolute; left: 50%; bottom: 112px; transform: translateX(-50%);
+      padding: 8px 16px; background: rgba(10,14,22,.82); border: 1px solid rgba(242,199,68,.7);
+      border-radius: 6px; font-size: 14px; font-weight: 600; letter-spacing: .5px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.5); transition: opacity .15s;
+    }
+    #interactPrompt.hidden { opacity: 0; }
+    #interactPrompt kbd { background: #f2c744; color: #111; padding: 1px 7px; border-radius: 3px; margin-right: 6px; font-weight: 800; }
+
+    /* Спидометр авто */
+    #speedBox {
+      position: absolute; right: 28px; bottom: 28px;
+      padding: 10px 18px; background: rgba(12,16,24,.78); border: 1px solid rgba(255,255,255,.22);
+      border-radius: 8px; text-align: right; min-width: 145px;
+    }
+    #speedBox.hidden { display: none; }
+    #carName { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #f2c744; }
+    #speedVal { font-size: 38px; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; }
+    #speedBox small { font-size: 12px; opacity: .7; }
+
+    /* Панель оружия */
+    #hotbar { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); display: flex; gap: 8px; transition: opacity .2s; }
+    .slot { min-width: 96px; padding: 6px 10px; background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.25); border-radius: 4px; font-size: 12px; text-align: center; opacity: .65; }
+    .slot b { display: block; font-size: 15px; }
+    .slot.sel { opacity: 1; border-color: #f2c744; background: rgba(60,50,10,.65); }
+
+    @media (max-width: 780px) {
+      #minimapWrap { width: 130px; height: 130px; left: 12px; bottom: 72px; }
+      #minimap { width: 130px; height: 130px; }
+      .bars { left: 12px; bottom: 54px; width: 130px; }
+      #hotbar { bottom: 18px; gap: 4px; }
+      .slot { min-width: 68px; padding: 4px 5px; font-size: 10px; }
+    }
+
+    #damage { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(200,0,0,.55)); opacity: 0; transition: opacity .3s; }
+    #debug { position: absolute; left: 12px; top: 10px; font: 12px/1.4 monospace; color: #9fe870; white-space: pre; }
+    #help { position: absolute; left: 12px; bottom: 6px; font-size: 11px; opacity: .55; }
+
+    /* Экран WASTED */
+    #wasted {
+      position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: radial-gradient(circle, rgba(40,0,0,.55), rgba(0,0,0,.88)); pointer-events: none; z-index: 20;
+    }
+    #wasted.hidden { display: none; }
+    #wasted h2 { font-size: 64px; letter-spacing: 8px; color: #e03e3e; text-shadow: 0 4px 20px #000; }
+    #wasted p { margin-top: 8px; font-size: 16px; opacity: .8; }
+
+    /* ---------- Стартовое меню и Пауза с Картой ---------- */
+    #overlay {
+      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, rgba(6,10,18,.82), rgba(14,20,32,.68));
+      backdrop-filter: blur(6px); z-index: 30;
+    }
+    #overlay.hidden { display: none; }
+    #menu {
+      width: 560px; max-width: 94vw; padding: 26px 30px;
+      background: rgba(16,20,28,.94); border: 1px solid rgba(255,255,255,.16);
+      border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.75);
+    }
+    #menuTitle {
+      font-size: 34px; font-weight: 900; letter-spacing: 4px; text-align: center;
+      background: linear-gradient(90deg, #fff, #f2c744); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    #menuSub { text-align: center; opacity: .7; font-size: 13px; margin: 4px 0 16px; }
+    #resume {
+      display: block; width: 100%; padding: 13px; font-size: 17px; font-weight: 800; letter-spacing: 2px;
+      background: linear-gradient(135deg, #f2c744, #e6a817); color: #161200; border: 0; border-radius: 6px;
+      cursor: pointer; transition: transform .1s, filter .15s;
+    }
+    #resume:disabled { opacity: 0.65; cursor: wait; filter: grayscale(0.3); }
+    #resume:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+    #menuTabs { display: flex; gap: 6px; margin: 16px 0 12px; border-bottom: 1px solid rgba(255,255,255,.12); padding-bottom: 8px; }
+    .tab-btn {
+      flex: 1; padding: 8px; background: rgba(255,255,255,.06); color: #cbd5e1;
+      border: 1px solid rgba(255,255,255,.1); border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;
+    }
+    .tab-btn.active { background: #f2c744; color: #161200; border-color: #f2c744; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .row { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13.5px; }
+    .row label { width: 175px; opacity: .88; }
+    .row input[type=range] { flex: 1; accent-color: #f2c744; }
+    .row select { flex: 1; background: #232a36; color: #fff; border: 1px solid #3a4456; padding: 5px 8px; border-radius: 4px; }
+    .row output { width: 42px; text-align: right; opacity: .8; font-variant-numeric: tabular-nums; }
+
+    #mapWrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    #fullMap {
+      width: 380px; height: 380px; max-width: 100%; border-radius: 8px;
+      border: 2px solid rgba(255,255,255,.25); cursor: crosshair; background: #1b2028;
+    }
+    .map-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 12px; opacity: .82; }
+    #clearWaypoint {
+      padding: 4px 10px; background: #2b3342; color: #fff; border: 1px solid rgba(255,255,255,.2);
+      border-radius: 4px; cursor: pointer; font-size: 12px;
+    }
+
+    .keys { font-size: 13px; line-height: 1.85; opacity: .88; columns: 2; padding: 6px 0; }
+    .keys kbd { background: #2b3342; border: 1px solid rgba(255,255,255,.15); border-radius: 3px; padding: 1px 6px; font-family: inherit; color: #f2c744; }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="vignette"></div>
+  <div id="slowmoVignette"></div>
+
+  <div id="hud">
+    <div id="crosshair" class="hidden"></div>
+    <div id="hitmarker"></div>
+    <div id="headshotBadge">В ГОЛОВУ!</div>
+    <div id="damage"></div>
+
+    <!-- Колесо оружия на Tab -->
+    <div id="weaponWheel" class="hidden">
+      <div class="wheel-bg"></div>
+      <div class="wheel-sector ws-0"><span class="ico">✊</span>Кулаки</div>
+      <div class="wheel-sector ws-1"><span class="ico">🔫</span>Пистолет</div>
+      <div class="wheel-sector ws-2"><span class="ico">🧨</span>ПП</div>
+      <div class="wheel-sector ws-3"><span class="ico">💥</span>Дробовик</div>
+      <div class="wheel-sector ws-4"><span class="ico">🎯</span>Винтовка</div>
+      <div id="wheelCenter"><b>Оружие</b><span>Tab</span></div>
+    </div>
+
+    <div id="minimapWrap">
+      <canvas id="minimap" width="190" height="190"></canvas>
+      <div id="compass">N</div>
+    </div>
+    <div class="bars">
+      <div class="bar"><b id="hpFill"></b></div>
+      <div class="bar"><b id="arFill"></b></div>
+    </div>
+
+    <div id="topRight">
+      <div id="money">$0</div>
+      <div id="stars">★★★★★</div>
+      <div id="weaponBox">
+        <div id="weaponName"></div>
+        <div id="ammo"></div>
+        <div id="reloadMsg"></div>
+      </div>
+    </div>
+
+    <div id="interactPrompt" class="hidden"></div>
+
+    <div id="speedBox" class="hidden">
+      <div id="carName">Седан</div>
+      <div id="speedVal">0</div>
+      <small>КМ/Ч</small>
+    </div>
+
+    <div id="hotbar"></div>
+    <div id="debug"></div>
+    <div id="help">Tab — колесо оружия • E — сесть/угнать • Esc — карта и пауза • F3 — отладка</div>
+  </div>
+
+  <div id="wasted" class="hidden">
+    <h2>ПОТРАЧЕНО</h2>
+    <p>Возрождение через пару секунд… (-$250)</p>
+  </div>
+
+  <div id="overlay">
+    <div id="menu">
+      <h1 id="menuTitle">LOS SANTOS WEB</h1>
+      <div id="menuSub">Реалистичный город • Трафик • Полиция • Угон авто</div>
+      <button id="resume">НАЧАТЬ ИГРУ</button>
+
+      <div id="menuTabs">
+        <button class="tab-btn active" data-tab="map">КАРТА (ESC)</button>
+        <button class="tab-btn" data-tab="settings">ГРАФИКА И ЗВУК</button>
+        <button class="tab-btn" data-tab="controls">УПРАВЛЕНИЕ</button>
+      </div>
+
+      <div id="tab-map" class="tab-panel active">
+        <div id="mapWrap">
+          <canvas id="fullMap" width="420" height="420"></canvas>
+          <div class="map-bar">
+            <span id="mapCoords">Кликните по карте для GPS-метки</span>
+            <button id="clearWaypoint">Сбросить метку</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-settings" class="tab-panel">
+        <div class="row"><label>Время суток</label>
+          <select id="setTime">
+            <option value="day" selected>День (Ясно)</option>
+            <option value="sunset">Золотой час (Закат)</option>
+            <option value="night">Ночь (Огни города)</option>
+          </select>
+        </div>
+        <div class="row"><label>Отражения и шейдеры</label>
+          <select id="setRefl">
+            <option value="0">Выкл</option>
+            <option value="0.6">Средние</option>
+            <option value="1" selected>Высокие (Реализм)</option>
+          </select>
+        </div>
+        <div class="row"><label>Качество теней</label>
+          <select id="setShadow"><option value="0">Выкл</option><option value="1024">Низкое</option><option value="2048" selected>Среднее</option><option value="4096">Высокое</option></select></div>
+        <div class="row"><label>Дальность прорисовки</label><input id="setView" type="range" min="300" max="1200" step="50" value="700"><output id="outView">700</output></div>
+        <div class="row"><label>Разрешение рендера</label>
+          <select id="setPR"><option value="1">1×</option><option value="1.5">1.5×</option><option value="2" selected>2× (макс.)</option></select></div>
+        <div class="row"><label>Громкость</label><input id="setVolume" type="range" min="0" max="100" value="70"><output id="outVolume">70</output></div>
+        <div class="row"><label>Чувствительность мыши</label><input id="setSens" type="range" min="10" max="60" value="22"><output id="outSens">22</output></div>
+      </div>
+
+      <div id="tab-controls" class="tab-panel">
+        <div class="keys">
+          <div><kbd>WASD</kbd> движение / газ-тормоз</div>
+          <div><kbd>Shift</kbd> бег</div>
+          <div><kbd>Пробел</kbd> прыжок / ручник</div>
+          <div><kbd>E</kbd> сесть / угнать / выйти</div>
+          <div><kbd>Tab</kbd> колесо оружия</div>
+          <div><kbd>C</kbd> кувырок</div>
+          <div><kbd>H</kbd> гудок (в авто)</div>
+          <div><kbd>G</kbd> мигалка (в полиции)</div>
+          <div><kbd>ЛКМ / ПКМ</kbd> огонь / прицел</div>
+          <div><kbd>R</kbd> перезарядка</div>
+          <div><kbd>Esc</kbd> карта и пауза</div>
+          <div><kbd>F3</kbd> отладка FPS</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="errbox" style="display:none;position:fixed;left:0;right:0;top:0;z-index:99;padding:12px 16px;background:#8b1d1d;color:#fff;font:13px/1.5 monospace;white-space:pre-wrap"></div>
+
+  <script>
+    (function () {
+      var box = document.getElementById('errbox');
+      function show(msg) { box.style.display = 'block'; box.textContent += msg + '\n'; }
+      window.addEventListener('error', function (e) { show('Ошибка: ' + (e.message || 'сбой загрузки скрипта') + (e.filename ? '\n  ' + e.filename + ':' + e.lineno : '')); });
+      window.addEventListener('unhandledrejection', function (e) { show('Ошибка: ' + (e.reason && (e.reason.stack || e.reason.message) || e.reason)); });
+      setTimeout(function () {
+        if (!window.__gameStarted) show('Игра не запустилась: main.js не загрузился или упал при импорте.\nОткройте консоль (F12 → Console) и пришлите текст ошибки.');
+      }, 3000);
+    })();
+  </script>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+      "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js"
+    }
+  }
+  </script>
+
+  <script type="module" src="./src/main.js?v=8"></script>
+</body>
+</html>
