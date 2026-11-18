@@ -94,6 +94,10 @@ export class PedestrianSystem {
       const p = this.peds[i];
       this.scene.remove(p.mesh);
       const model = templates[i % templates.length].clone(true);
+      const tint = new THREE.Color().setHSL(Math.random(), 0.3, 0.82);
+      model.traverse((m) => {
+        if (m.isMesh && m.material && m.material.color) { m.material = m.material.clone(); m.material.color.multiply(tint); }
+      });
       p.mesh = model;
       p.isGlb = true;
       p.legL = p.legR = p.armL = p.armR = null;
@@ -259,13 +263,21 @@ export class PedestrianSystem {
     return null;
   }
 
-  _killPed(p) {
+  /** Взрыв: убивает пешеходов в радиусе (считается преступлением игрока). */
+  blast(x, z, r) {
+    for (const p of this.peds) {
+      if (!p.dead && Math.hypot(p.x - x, p.z - z) < r) { p.hp = 0; this._killPed(p, true); }
+    }
+  }
+
+  _killPed(p, byPlayer = true) {
     if (p.dead) return;
     p.dead = true;
     p.deadTimer = 14;
     p.mesh.position.y = 0.2;
     p.mesh.rotation.x = -Math.PI / 2;
     this.audio.pedScream();
+    if (!byPlayer) return;
     const cash = 40 + Math.floor(Math.random() * 140);
     this.player.money += cash;
     this.audio.cashPickup();
@@ -305,7 +317,7 @@ export class PedestrianSystem {
         const vx = v.body.position.x, vz = v.body.position.z;
         const dx = p.x - vx, dz = p.z - vz;
         if (dx * dx + dz * dz < 4.5) {
-          this._killPed(p);
+          this._killPed(p, v === this.player.inVehicle);
           break;
         }
       }

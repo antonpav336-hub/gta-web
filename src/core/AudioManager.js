@@ -61,6 +61,26 @@ export class AudioManager {
     src.start(now, Math.random() * 0.5, dur + 0.05);
   }
 
+  setRain(level) {
+    if (!this.ctx) return;
+    if (!this._rain) {
+      const c = this.ctx, src = c.createBufferSource();
+      src.buffer = this.noiseBuf; src.loop = true;
+      const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 3200; f.Q.value = 0.5;
+      const g = c.createGain(); g.gain.value = 0;
+      src.connect(f); f.connect(g); g.connect(this.master); src.start();
+      this._rain = { g };
+    }
+    this._rain.g.gain.setTargetAtTime(level * 0.22, this.ctx.currentTime, 0.6);
+  }
+
+  explosion() {
+    if (!this.ctx) return;
+    this._burst({ dur: 1.4, type: 'lowpass', f0: 1800, f1: 60, q: 0.8, gain: 1.0, attack: 0.005 });
+    this._burst({ t: 0.05, dur: 0.6, type: 'bandpass', f0: 900, f1: 200, q: 0.9, gain: 0.6 });
+    this._tone({ dur: 0.9, f0: 90, f1: 28, gain: 0.9 });
+  }
+
   _tone({ t = 0, dur = 0.1, f0 = 150, f1 = 40, gain = 0.5, type = 'sine' }) {
     const c = this.ctx, now = c.currentTime + t;
     const o = c.createOscillator();

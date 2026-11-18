@@ -200,7 +200,11 @@ export class Engine {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+    if (this.composer) { this.composer.setPixelRatio(this.renderer.getPixelRatio()); this.composer.setSize(w, h); }
   }
 
-  render() { this.renderer.render(this.scene, this.camera); }
+  render() {
+    if (this.composer && this.bloomOn) this.composer.render();
+    else this.renderer.render(this.scene, this.camera);
+  }
 }

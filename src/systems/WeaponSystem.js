@@ -317,7 +317,9 @@ export class WeaponSystem {
         } else if (isVeh && this.vehicles) {
           const hitCar = this.vehicles.find((v) => v.body === body);
           if (hitCar) {
+            const wasAlive = !hitCar.destroyed;
             hitCar.damage(d.dmg * 0.45);
+            if (wasAlive && hitCar.destroyed) this._explodeCar(hitCar);
             this.hitTimer = 0.15;
             this.audio.hitMarker();
           }
@@ -369,7 +371,78 @@ export class WeaponSystem {
     }
   }
 
+  _explodeCar(car, depth = 0) {
+    const pos = car.body.position, scene = this.engine.scene;
+    // физика: подбрасываем и крутим остов
+    car.body.wakeUp();
+    car.body.applyImpulse(new CANNON.Vec3((Math.random() - 0.5) * 2000, car.body.mass * 7, (Math.random() - 0.5) * 2000), new CANNON.Vec3(0, 0, 0));
+    car.body.angularVelocity.set((Math.random() - 0.5) * 4, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 4);
+
+    // визуал: огненный шар, ядро, свет и дым
+    if (!this._boomGeo) this._boomGeo = new THREE.SphereGeometry(1, 14, 10);
+    const g = new THREE.Group();
+    g.position.set(pos.x, pos.y + 0.8, pos.z);
+    const mk = (color, op) => new THREE.Mesh(this._boomGeo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, depthWrite: false }));
+    const fire = mk(0xff6a10, 0.9), core = mk(0xffe27a, 1);
+    const light = new THREE.PointLight(0xff8a30, 0, 60, 2);
+    g.add(fire, core, light);
+    const smoke = [];
+    for (let i = 0; i < 6; i++) {
+      const sm = mk(0x2a2a2d, 0.7);
+      sm.position.set((Math.random() - 0.5) * 2.5, Math.random() * 1.2, (Math.random() - 0.5) * 2.5);
+      g.add(sm); smoke.push(sm);
+    }
+    scene.add(g);
+    (this.booms || (this.booms = [])).push({ g, fire, core, light, smoke, t: 0 });
+
+    // урон и последствия
+    const p = this.player.position;
+    const dp = Math.hypot(p.x - pos.x, p.z - pos.z);
+    if (dp < 9) this.player.takeDamage(70 * (1 - dp / 9));
+    if (this.peds) { this.peds.blast(pos.x, pos.z, 8); this.peds.alertNearby(pos.x, pos.z, 80); }
+    if (this.police) this.police.addWanted(1);
+    if (this.vehicles && depth < 3) {
+      for (const v of this.vehicles) {
+        if (v === car || v.destroyed) continue;
+        const dx = v.body.position.x - pos.x, dz = v.body.position.z - pos.z;
+        const d = Math.hypot(dx, dz);
+        if (d < 10) {
+          v.body.wakeUp();
+          v.body.applyImpulse(new CANNON.Vec3(dx / (d || 1) * 3000, 1500, dz / (d || 1) * 3000), new CANNON.Vec3(0, 0, 0));
+          v.damage(60 * (1 - d / 10));
+          if (v.destroyed) this._explodeCar(v, depth + 1);
+        }
+      }
+    }
+    this.engine.addShake(0.7);
+    this.audio.explosion();
+  }
+
+  _updateBooms(dt) {
+    const list = this.booms; if (!list || !list.length) return;
+    for (let i = list.length - 1; i >= 0; i--) {
+      const b = list[i]; b.t += dt;
+      const t = b.t;
+      b.fire.scale.setScalar(1.5 + Math.min(t, 0.6) * 9);
+      b.fire.material.opacity = Math.max(0, 0.9 - t / 0.8);
+      b.core.scale.setScalar(1 + Math.min(t, 0.4) * 6);
+      b.core.material.opacity = Math.max(0, 1 - t / 0.45);
+      b.light.intensity = 220 * Math.max(0, 1 - t / 0.6);
+      b.smoke.forEach((sm, k) => {
+        sm.position.y += dt * (2 + k * 0.4);
+        sm.scale.setScalar(1 + t * (1.4 + k * 0.15));
+        sm.material.opacity = Math.max(0, 0.7 - t / 3.2);
+      });
+      if (t > 3.2) {
+        this.engine.scene.remove(b.g);
+        b.g.traverse((o) => { if (o.material) o.material.dispose(); });
+        list.splice(i, 1);
+      }
+    }
+  }
+
   _updateEffects(dt) {
+    this._updateBooms(dt);
     if (this.flashTimer > 0) {
       this.flashTimer -= dt;
       if (this.flashTimer <= 0) { this.flash.visible = false; this.flashLight.intensity = 0; }

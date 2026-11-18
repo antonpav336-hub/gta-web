@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 /**
  * CityBuilder — загрузка 3D-города (assets/models/city.glb),
@@ -251,8 +252,84 @@ export class CityBuilder {
       }
     });
 
-    this.cityGroup = root;
-    this.scene.add(root);
+    this.cityGroup = this._optimize(root);
+    this.scene.add(this.cityGroup);
+  }
+
+  /**
+   * Оптимизация: склеивает статичные меши по (материал + ячейка 120 м).
+   * Меньше draw-call'ов, а frustum culling работает по ячейкам: всё, что позади камеры
+   * или за пределами обзора, не рендерится. При любой ошибке остаётся исходный город.
+   */
+  _optimize(root) {
+    try {
+      const CELL = 120;
+      const groups = new Map();
+      const passthrough = [];
+      const meshes = [];
+      root.updateMatrixWorld(true);
+      root.traverse((o) => { if (o.isMesh && o.visible) meshes.push(o); });
+      const box = new THREE.Box3(), c = new THREE.Vector3();
+
+      for (const m of meshes) {
+        if (Array.isArray(m.material) || m.isSkinnedMesh || m.isInstancedMesh || !m.geometry.attributes.position) {
+          passthrough.push(m); continue;
+        }
+        let g = m.geometry.clone();
+        g.applyMatrix4(m.matrixWorld);
+        if (g.index) g = g.toNonIndexed();
+        if (!g.attributes.normal) g.computeVertexNormals();
+        const n = g.attributes.position.count;
+        if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(n * 2), 2));
+        for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal' && k !== 'uv') g.deleteAttribute(k);
+        g.morphAttributes = {};
+        g.computeBoundingBox();
+        g.boundingBox.getCenter(c);
+        const key = m.material.uuid + '|' + Math.floor(c.x / CELL) + '|' + Math.floor(c.z / CELL);
+        let grp = groups.get(key);
+        if (!grp) { grp = { mat: m.material, geos: [] }; groups.set(key, grp); }
+        grp.geos.push(g);
+      }
+
+      const out = new THREE.Group();
+      out.name = 'cityOptimized';
+      const chunks = [];
+      for (const grp of groups.values()) {
+        const merged = grp.geos.length === 1 ? grp.geos[0] : mergeGeometries(grp.geos, false);
+        if (!merged) throw new Error('merge failed');
+        merged.computeBoundingSphere();
+        const mesh = new THREE.Mesh(merged, grp.mat);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.matrixAutoUpdate = false;
+        out.add(mesh);
+        chunks.push(mesh);
+      }
+      for (const m of passthrough) out.attach(m);
+      out.updateMatrixWorld(true);
+      for (const m of meshes) if (m.geometry && !passthrough.includes(m)) m.geometry.dispose();
+      this._chunks = chunks;
+      this._cullT = 0;
+      console.log('Город оптимизирован: ' + meshes.length + ' мешей → ' + chunks.length + ' чанков');
+      return out;
+    } catch (e) {
+      console.warn('Оптимизация города пропущена:', e);
+      return root;
+    }
+  }
+
+  /** Тени отбрасывают только чанки рядом с игроком (остальные не попадают в теневую карту). */
+  updateCulling(dt, pos, shadowRadius) {
+    if (!this._chunks) return;
+    this._cullT -= dt;
+    if (this._cullT > 0) return;
+    this._cullT = 0.4;
+    const r0 = shadowRadius + 60;
+    for (const m of this._chunks) {
+      const s = m.geometry.boundingSphere;
+      const d = Math.hypot(s.center.x - pos.x, s.center.z - pos.z) - s.radius;
+      m.castShadow = d < r0;
+    }
   }
 
   _borders() {

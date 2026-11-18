@@ -235,6 +235,40 @@ export class Environment {
     return p;
   }
 
+  /** Плавный переход между режимами без перестройки PMREM (для смены суток). */
+  blend(a, b, t, engine = null) {
+    const A = PRESETS[a] || PRESETS.day, B = PRESETS[b] || PRESETS.day;
+    const L = (x, y) => x + (y - x) * t;
+    const C = (x, y) => x.clone().lerp(y, t);
+    const H = (x, y) => new THREE.Color(x).lerp(new THREE.Color(y), t);
+    const p = {
+      zenith: C(A.zenith, B.zenith), horizon: C(A.horizon, B.horizon), ground: C(A.ground, B.ground),
+      sunColor: C(A.sunColor, B.sunColor), sunDir: A.sunDir.clone().lerp(B.sunDir, t).normalize(),
+      sunIntensity: L(A.sunIntensity, B.sunIntensity),
+      hemiSky: H(A.hemiSky, B.hemiSky), hemiGround: H(A.hemiGround, B.hemiGround), hemiIntensity: L(A.hemiIntensity, B.hemiIntensity),
+      fogColor: C(A.fogColor, B.fogColor), cloudColor: C(A.cloudColor, B.cloudColor), cloudOpacity: L(A.cloudOpacity, B.cloudOpacity),
+      stars: L(A.stars, B.stars), nightFactor: L(A.nightFactor, B.nightFactor), exposure: L(A.exposure, B.exposure),
+    };
+    this.nightFactor = p.nightFactor;
+    const u = this.uniforms;
+    u.uZenith.value.copy(p.zenith); u.uHorizon.value.copy(p.horizon); u.uGround.value.copy(p.ground);
+    u.uSunDir.value.copy(p.sunDir); u.uSunColor.value.copy(p.sunColor);
+    u.uCloudColor.value.copy(p.cloudColor); u.uCloudOpacity.value = p.cloudOpacity; u.uStars.value = p.stars;
+    this._silMat.color.copy(p.ground).lerp(p.horizon, 0.25);
+    if (engine) {
+      engine.sunDir.copy(p.sunDir);
+      engine.sun.color.copy(p.sunColor);
+      engine.sun.intensity = p.sunIntensity;
+      engine.hemi.color.copy(p.hemiSky);
+      engine.hemi.groundColor.copy(p.hemiGround);
+      engine.hemi.intensity = p.hemiIntensity;
+      engine.fogColor.copy(p.fogColor);
+      engine.scene.fog.color.copy(p.fogColor);
+      engine.renderer.toneMappingExposure = p.exposure;
+    }
+    return p;
+  }
+
   update(dt, camPos) {
     this.uniforms.uTime.value += dt;
     if (camPos) this.skyMesh.position.copy(camPos);

@@ -15,6 +15,7 @@ import { HUD } from './ui/HUD.js?v=10';
 import { Menus } from './ui/Menus.js?v=10';
 import { TouchControls } from './ui/Touch.js?v=10';
 import { Extras } from './ui/Extras.js?v=10';
+import { Effects } from './ui/Effects.js?v=10';
 
 /**
  * main.js — инициализация и главный игровой цикл.
@@ -123,6 +124,7 @@ const menus = new Menus({ engine, audio, input, city, hud, game: gameApi });
 
 const touch = input.touch ? new TouchControls(input) : null;
 const extras = new Extras({ input, player, weapons, hud, physics, audio });
+const fx = new Effects({ engine, menus, city, audio, input, allVehicles });
 
 // ---------- Асинхронная загрузка 3D города и НПС ----------
 resumeBtn.disabled = true;
@@ -237,6 +239,8 @@ function frame() {
       police.update(simDt, engine.env.nightFactor);
       peds.update(simDt, allVehicles());
       extras.update(simDt);
+      fx.update(dt);
+      city.updateCulling(dt, player.position, engine.quality.shadowRadius);
 
       physics.step(simDt);
       player.syncMesh();
