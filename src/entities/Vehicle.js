@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { GROUP } from '../core/Physics.js?v=7';
+import { GROUP } from '../core/Physics.js?v=10';
 
 /**
  * Vehicle — реалистичный автомобиль с физикой cannon-es, clearcoat-покраской,
@@ -92,6 +92,7 @@ export class Vehicle {
       envMapIntensity: 1.4,
     });
 
+    this.paintMat = paintMat;
     const wheelR = this.type === 'suv' ? 0.40 : 0.34;
     const bodyY = wheelR * 0.7 + s.h / 2;
 

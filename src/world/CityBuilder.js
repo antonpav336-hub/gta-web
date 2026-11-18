@@ -167,7 +167,7 @@ export class CityBuilder {
     const loader = new GLTFLoader();
     const gltf = await new Promise((resolve, reject) => {
       loader.load(
-        './assets/models/city.glb?v=9',
+        './assets/models/city.glb?v=10',
         resolve,
         (xhr) => {
           if (onProgress && xhr.total > 0) onProgress(xhr.loaded / xhr.total);

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { GROUP } from '../core/Physics.js?v=7';
-import { ObjectPool } from '../core/ObjectPool.js?v=7';
+import { GROUP } from '../core/Physics.js?v=10';
+import { ObjectPool } from '../core/ObjectPool.js?v=10';
 
 export const WEAPONS = [
   {
@@ -68,6 +68,7 @@ export class WeaponSystem {
     this.vehicles = null;
 
     this.current = -1;
+    this.owned = WEAPONS.map((w, i) => i === 0);
     this.ammo = WEAPONS.map((w) => ({ mag: w.mag, reserve: w.reserve }));
     this.cooldown = 0;
     this.reloading = 0;
@@ -159,6 +160,7 @@ export class WeaponSystem {
   select(i) {
     if (i === this.current) return;
     if (i < -1 || i >= WEAPONS.length) return;
+    if (i >= 0 && !this.owned[i]) return;
     this.current = i;
     this.reloading = 0;
     this.cooldown = 0.25;
@@ -169,8 +171,11 @@ export class WeaponSystem {
 
   _cycle(dir) {
     const n = WEAPONS.length + 1;
-    const idx = ((this.current + 1 + dir) % n + n) % n - 1;
-    this.select(idx);
+    let c = this.current;
+    for (let k = 0; k < n; k++) {
+      c = ((c + 1 + dir) % n + n) % n - 1;
+      if (c < 0 || this.owned[c]) { this.select(c); return; }
+    }
   }
 
   get def() { return this.current >= 0 ? WEAPONS[this.current] : null; }

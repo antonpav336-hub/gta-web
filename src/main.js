@@ -1,18 +1,20 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { Engine } from './core/Engine.js?v=9';
-import { Physics, GROUP } from './core/Physics.js?v=9';
-import { InputManager } from './core/InputManager.js?v=9';
-import { AudioManager } from './core/AudioManager.js?v=9';
-import { createTextures } from './core/Textures.js?v=9';
-import { CityBuilder } from './world/CityBuilder.js?v=9';
-import { Player } from './entities/Player.js?v=9';
-import { WeaponSystem } from './systems/WeaponSystem.js?v=9';
-import { PedestrianSystem } from './systems/PedestrianSystem.js?v=9';
-import { PoliceSystem } from './systems/PoliceSystem.js?v=9';
-import { TrafficSystem } from './systems/TrafficSystem.js?v=9';
-import { HUD } from './ui/HUD.js?v=9';
-import { Menus } from './ui/Menus.js?v=9';
+import { Engine } from './core/Engine.js?v=10';
+import { Physics, GROUP } from './core/Physics.js?v=10';
+import { InputManager } from './core/InputManager.js?v=10';
+import { AudioManager } from './core/AudioManager.js?v=10';
+import { createTextures } from './core/Textures.js?v=10';
+import { CityBuilder } from './world/CityBuilder.js?v=10';
+import { Player } from './entities/Player.js?v=10';
+import { WeaponSystem } from './systems/WeaponSystem.js?v=10';
+import { PedestrianSystem } from './systems/PedestrianSystem.js?v=10';
+import { PoliceSystem } from './systems/PoliceSystem.js?v=10';
+import { TrafficSystem } from './systems/TrafficSystem.js?v=10';
+import { HUD } from './ui/HUD.js?v=10';
+import { Menus } from './ui/Menus.js?v=10';
+import { TouchControls } from './ui/Touch.js?v=10';
+import { Extras } from './ui/Extras.js?v=10';
 
 /**
  * main.js — инициализация и главный игровой цикл.
@@ -119,6 +121,8 @@ const gameApi = {
 const hud = new HUD(gameApi, minimapCanvas);
 const menus = new Menus({ engine, audio, input, city, hud, game: gameApi });
 
+const touch = input.touch ? new TouchControls(input) : null;
+const extras = new Extras({ input, player, weapons, hud, physics, audio });
 
 // ---------- Асинхронная загрузка 3D города и НПС ----------
 resumeBtn.disabled = true;
@@ -169,6 +173,8 @@ let cinematicTime = 0;
 
 input.onLockChange = (locked) => {
   paused = !locked;
+  if (touch) touch.setActive(locked);
+  if (!locked) extras.renderShop();
   if (locked) {
     hasStartedOnce = true;
     audio.init();
@@ -230,6 +236,7 @@ function frame() {
       traffic.update(simDt, input, engine.env.nightFactor, police.cruisers);
       police.update(simDt, engine.env.nightFactor);
       peds.update(simDt, allVehicles());
+      extras.update(simDt);
 
       physics.step(simDt);
       player.syncMesh();

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { CITY } from '../world/CityBuilder.js?v=7';
-import { GROUP } from '../core/Physics.js?v=7';
-import { Vehicle } from '../entities/Vehicle.js?v=7';
+import { CITY } from '../world/CityBuilder.js?v=10';
+import { GROUP } from '../core/Physics.js?v=10';
+import { Vehicle } from '../entities/Vehicle.js?v=10';
 
 /**
  * PoliceSystem — система розыска (1–5 звёзд), патрульные машины с объездом препятствий

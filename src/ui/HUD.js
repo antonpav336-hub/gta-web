@@ -1,5 +1,5 @@
-import { CITY } from '../world/CityBuilder.js?v=7';
-import { WEAPONS } from '../systems/WeaponSystem.js?v=7';
+import { CITY } from '../world/CityBuilder.js?v=10';
+import { WEAPONS } from '../systems/WeaponSystem.js?v=10';
 
 /**
  * HUD — здоровье, броня, деньги, звёзды розыска, точечный прицел, хэдшот-маркер,

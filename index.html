@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>LOS SANTOS WEB — GTA-V Web (PC)</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -190,6 +190,17 @@
     #resume:disabled { opacity: 0.65; cursor: wait; filter: grayscale(0.3); }
     #resume:hover { filter: brightness(1.08); transform: translateY(-1px); }
 
+    #menu { max-height: 94vh; overflow-y: auto; }
+    #menuTabs { flex-wrap: wrap; }
+    .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.08); font-size: 14px; }
+    .row small { display: block; opacity: .6; font-size: 12px; }
+    .buy { padding: 8px 12px; background: #f2c744; color: #161200; border: 0; border-radius: 6px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+    .buy:disabled { background: #2a3140; color: #8a93a5; cursor: default; }
+    .swatches { display: flex; gap: 8px; flex-wrap: wrap; padding: 8px 0; }
+    .swatch { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #fff6; cursor: pointer; }
+    #toast { position: fixed; left: 50%; top: 14%; transform: translateX(-50%); z-index: 8; padding: 10px 18px; background: rgba(0,0,0,.7); border: 1px solid #f2c744; border-radius: 8px; font-weight: 700; pointer-events: none; opacity: 0; transition: opacity .3s; text-align: center; }
+    #toast.show { opacity: 1; }
+    #missionHud { position: fixed; left: 50%; top: 56px; transform: translateX(-50%); z-index: 7; padding: 6px 14px; background: rgba(0,0,0,.55); border-radius: 8px; font-weight: 700; font-size: 15px; pointer-events: none; display: none; text-align: center; color: #f2c744; }
     #menuTabs { display: flex; gap: 6px; margin: 16px 0 12px; border-bottom: 1px solid rgba(255,255,255,.12); padding-bottom: 8px; }
     .tab-btn {
       flex: 1; padding: 8px; background: rgba(255,255,255,.06); color: #cbd5e1;
@@ -288,6 +299,8 @@
       <div id="menuTabs">
         <button class="tab-btn active" data-tab="map">КАРТА (ESC)</button>
         <button class="tab-btn" data-tab="settings">ГРАФИКА И ЗВУК</button>
+        <button class="tab-btn" data-tab="shop">МАГАЗИН</button>
+        <button class="tab-btn" data-tab="missions">МИССИИ</button>
         <button class="tab-btn" data-tab="controls">УПРАВЛЕНИЕ</button>
       </div>
 
@@ -324,6 +337,9 @@
         <div class="row"><label>Громкость</label><input id="setVolume" type="range" min="0" max="100" value="70"><output id="outVolume">70</output></div>
         <div class="row"><label>Чувствительность мыши</label><input id="setSens" type="range" min="10" max="60" value="22"><output id="outSens">22</output></div>
       </div>
+
+      <div id="tab-shop" class="tab-panel"></div>
+      <div id="tab-missions" class="tab-panel"></div>
 
       <div id="tab-controls" class="tab-panel">
         <div class="keys">
@@ -368,6 +384,6 @@
   }
   </script>
 
-  <script type="module" src="./src/main.js?v=9"></script>
+  <script type="module" src="./src/main.js?v=10"></script>
 </body>
 </html>

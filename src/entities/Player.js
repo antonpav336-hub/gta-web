@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { GROUP } from '../core/Physics.js?v=7';
+import { GROUP } from '../core/Physics.js?v=10';
 
 /**
  * Player — пешеход: ходьба, бег, прыжок, кувырок + посадка в авто и получение урона.

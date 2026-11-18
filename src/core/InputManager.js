@@ -14,6 +14,7 @@ export class InputManager {
     this.mouseDY = 0;
     this.sensitivity = 0.0022;
     this.locked = false;
+    this.touch = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
 
     this.mouse = { left: false, right: false };
     this._leftPressed = false;
@@ -74,7 +75,26 @@ export class InputManager {
     });
   }
 
+  _setLocked(v) {
+    this.locked = v;
+    this.overlay.classList.toggle('hidden', v);
+    if (!v) this._clearHeld();
+    if (this.onLockChange) this.onLockChange(v);
+  }
+
+  /** Пауза на телефоне (вместо Esc). */
+  pause() { if (this.touch && this.locked) this._setLocked(false); }
+
   requestLock() {
+    if (this.touch) {
+      this._setLocked(true);
+      try {
+        const el = document.documentElement;
+        if (el.requestFullscreen && !document.fullscreenElement) el.requestFullscreen().catch(() => {});
+        if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+      } catch (e) { /* ignore */ }
+      return;
+    }
     // unadjustedMovement отключает акселерацию мыши ОС (где поддерживается)
     const p = this.canvas.requestPointerLock({ unadjustedMovement: true });
     if (p && p.catch) p.catch(() => this.canvas.requestPointerLock());

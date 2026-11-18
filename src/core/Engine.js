@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Environment } from './Environment.js?v=7';
+import { Environment } from './Environment.js?v=10';
 
 /**
  * Engine — рендерер, сцена, туман, свет, окружение (шейдер неба + PMREM отражения)
