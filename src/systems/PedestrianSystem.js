@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { CITY } from '../world/CityBuilder.js?v=8';
-import { GROUP } from '../core/Physics.js?v=8';
+import { CITY } from '../world/CityBuilder.js?v=9';
+import { GROUP } from '../core/Physics.js?v=9';
 
 /**
  * PedestrianSystem — пешеходы города с 3D моделями из Citizen NPC Pack (npcs.glb).
@@ -38,7 +38,7 @@ export class PedestrianSystem {
     const loader = new GLTFLoader();
     const gltf = await new Promise((resolve, reject) => {
       loader.load(
-        './assets/models/npcs.glb?v=8',
+        './assets/models/npcs.glb?v=9',
         resolve,
         (xhr) => {
           if (onProgress && xhr.total > 0) onProgress(xhr.loaded / xhr.total);

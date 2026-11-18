@@ -167,7 +167,7 @@ export class CityBuilder {
     const loader = new GLTFLoader();
     const gltf = await new Promise((resolve, reject) => {
       loader.load(
-        './assets/models/city.glb?v=8',
+        './assets/models/city.glb?v=9',
         resolve,
         (xhr) => {
           if (onProgress && xhr.total > 0) onProgress(xhr.loaded / xhr.total);
@@ -194,13 +194,16 @@ export class CityBuilder {
       if (!obj.isMesh) return;
       box.setFromObject(obj);
       box.getSize(size);
-      if (size.y < 1.2 && size.x * size.z > bestArea) {
+      if (size.y < 1.2 && size.x * size.z < 100000 && size.x * size.z > bestArea) {
         bestArea = size.x * size.z;
         roadY = box.max.y;
       }
     });
 
-    root.position.y = -roadY;
+    // Центрируем город по X/Z в (0,0) и выравниваем дорогу на Y = 0
+    const rootBox = new THREE.Box3().setFromObject(root);
+    rootBox.getCenter(center);
+    root.position.set(-center.x, -roadY, -center.z);
     root.updateMatrixWorld(true);
 
     const winCache = new Map();

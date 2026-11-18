@@ -1,18 +1,18 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { Engine } from './core/Engine.js?v=8';
-import { Physics, GROUP } from './core/Physics.js?v=8';
-import { InputManager } from './core/InputManager.js?v=8';
-import { AudioManager } from './core/AudioManager.js?v=8';
-import { createTextures } from './core/Textures.js?v=8';
-import { CityBuilder } from './world/CityBuilder.js?v=8';
-import { Player } from './entities/Player.js?v=8';
-import { WeaponSystem } from './systems/WeaponSystem.js?v=8';
-import { PedestrianSystem } from './systems/PedestrianSystem.js?v=8';
-import { PoliceSystem } from './systems/PoliceSystem.js?v=8';
-import { TrafficSystem } from './systems/TrafficSystem.js?v=8';
-import { HUD } from './ui/HUD.js?v=8';
-import { Menus } from './ui/Menus.js?v=8';
+import { Engine } from './core/Engine.js?v=9';
+import { Physics, GROUP } from './core/Physics.js?v=9';
+import { InputManager } from './core/InputManager.js?v=9';
+import { AudioManager } from './core/AudioManager.js?v=9';
+import { createTextures } from './core/Textures.js?v=9';
+import { CityBuilder } from './world/CityBuilder.js?v=9';
+import { Player } from './entities/Player.js?v=9';
+import { WeaponSystem } from './systems/WeaponSystem.js?v=9';
+import { PedestrianSystem } from './systems/PedestrianSystem.js?v=9';
+import { PoliceSystem } from './systems/PoliceSystem.js?v=9';
+import { TrafficSystem } from './systems/TrafficSystem.js?v=9';
+import { HUD } from './ui/HUD.js?v=9';
+import { Menus } from './ui/Menus.js?v=9';
 
 /**
  * main.js — инициализация и главный игровой цикл.
