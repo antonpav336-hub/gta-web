@@ -1,0 +1,17 @@
+{
+  "assets": [],
+  "pending": [
+    {
+      "id": "realistic-city-pasha-evaluation",
+      "name": "Realistic City",
+      "author": "Pasha (collaboration credit shown: @katydid)",
+      "source": "https://sketchfab.com/3d-models/realistic-city-8dbfd6fc44c046c68853d9c95cc2918c",
+      "license": "CC BY (verify exact version and attribution text in downloaded archive)",
+      "format": "GLB/glTF availability to verify after official download",
+      "reported_triangles": 256700,
+      "status": "candidate-not-downloaded",
+      "target_path": "assets/models/city-realistic.glb",
+      "notes": "Do not replace city.glb until dimensions, file size, textures, road elevation and Android performance are checked."
+    }
+  ]
+}
