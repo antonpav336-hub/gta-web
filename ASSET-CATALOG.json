@@ -12,6 +12,44 @@
       "status": "candidate-not-downloaded",
       "target_path": "assets/models/city-realistic.glb",
       "notes": "Do not replace city.glb until dimensions, file size, textures, road elevation and Android performance are checked."
+    },
+    {
+      "id": "sedan-innerscene-evaluation",
+      "name": "Sedan car",
+      "author": "Innerscene",
+      "source": "https://www.innerscene.com/tools/library/3d-parts/sedan-car-42109739",
+      "license": "CC0 1.0",
+      "format": "GLB",
+      "reported_triangles": null,
+      "reported_dimensions_m": "2.3 x 4.7 x 1.5",
+      "status": "candidate-not-downloaded",
+      "target_path": "assets/models/vehicles/sedan.glb",
+      "notes": "Real-world-scale unbranded exterior; no detailed cabin, suspension or powertrain. Verify wheel node names and compatibility with existing Vehicle controller before use."
+    },
+    {
+      "id": "police-car-tevy-evaluation",
+      "name": "Police Patrol Car",
+      "author": "tevy",
+      "source": "https://tevy.dev/models/police-car",
+      "license": "CC0 1.0",
+      "format": "GLB with LOD0/LOD1/LOD2",
+      "reported_triangles": 56738,
+      "reported_dimensions_m": "2.13 x 1.6 x 5.22",
+      "status": "candidate-not-downloaded",
+      "target_path": "assets/models/vehicles/police-car.glb",
+      "notes": "Includes wheel, steering and door nodes; LOD options reported. Check node names and adapt before connecting to PoliceSystem."
+    },
+    {
+      "id": "ara3dgen-character-pipeline",
+      "name": "Ara 3D Gen realistic humanoid generator",
+      "author": "TuriaArt",
+      "source": "https://github.com/TuriaArt/3d-gen-TU",
+      "license": "MIT tool; generated base assets stated as CC0",
+      "format": "GLB/FBX/OBJ export",
+      "reported_triangles": "5k-120k configurable",
+      "status": "pipeline-candidate-not-integrated",
+      "target_path": "assets/models/characters/",
+      "notes": "Promising route for a realistic protagonist and varied NPCs. Generate lower-detail 5k-15k NPC variants and a 30k-40k player model; confirm each export's embedded asset/skin license and retarget animations before use."
     }
   ]
 }
