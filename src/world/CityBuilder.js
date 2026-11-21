@@ -21,6 +21,7 @@ export class CityBuilder {
     this.tex = textures;
     this.buildings = [];
     this.cityGroup = null;
+    this.borderBodies = [];
 
     this.shaderUniforms = {
       uSunDir: { value: new THREE.Vector3(0.55, 0.72, 0.42).normalize() },
@@ -207,6 +208,15 @@ export class CityBuilder {
     root.position.set(-center.x, -roadY, -center.z);
     root.updateMatrixWorld(true);
 
+    // Подстраиваем размер игрового мира под реальные габариты загруженной карты.
+    // Запас 80 м оставляет пространство для трафика и NPC у внешних кварталов.
+    rootBox.setFromObject(root);
+    rootBox.getSize(size);
+    const cityHalf = Math.max(size.x, size.z) * 0.5 + 80;
+    CITY.HALF = Math.max(250, cityHalf);
+    CITY.SIZE = CITY.HALF * 2;
+    this._borders();
+
     const winCache = new Map();
     const genCache = new Map();
 
@@ -333,11 +343,17 @@ export class CityBuilder {
   }
 
   _borders() {
+    // Удаляем старые стены 500-метровой карты перед установкой новых границ.
+    for (const body of this.borderBodies) this.physics.world.removeBody(body);
+    this.borderBodies.length = 0;
+
     const H = CITY.HALF, L = CITY.SIZE + 20;
-    this.physics.addStaticBox(0, 10, -H - 1, L, 20, 2);
-    this.physics.addStaticBox(0, 10, H + 1, L, 20, 2);
-    this.physics.addStaticBox(-H - 1, 10, 0, 2, 20, L);
-    this.physics.addStaticBox(H + 1, 10, 0, 2, 20, L);
+    this.borderBodies.push(
+      this.physics.addStaticBox(0, 10, -H - 1, L, 20, 2),
+      this.physics.addStaticBox(0, 10, H + 1, L, 20, 2),
+      this.physics.addStaticBox(-H - 1, 10, 0, 2, 20, L),
+      this.physics.addStaticBox(H + 1, 10, 0, 2, 20, L)
+    );
   }
 
   /** Обновляет текстуру мини-карты по загруженным зданиям нового 3D-города. */
